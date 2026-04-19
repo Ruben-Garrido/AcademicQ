@@ -1,0 +1,12 @@
+spring:
+  datasource:
+    url: "jdbc:h2:mem:testdb;NON_KEYWORDS=estado,password;MODE=MariaDB"
+    username: sa
+    password: 
+    driver-class-name: org.h2.Driver
+  jpa:
+    generate-ddl: true
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    database-platform: org.hibernate.dialect.H2Dialect
