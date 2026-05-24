@@ -5,9 +5,12 @@ application:
 spring:
   datasource:
     url: ${DB-URL}
-    username: ${DB-USERNAME}
-    password: ${DB-PASSWORD}
+    username: ${DB-USERNAME:}
+    password: ${DB-PASSWORD:}
     driver-class-name: org.mariadb.jdbc.Driver
+    hikari:
+      data-source-properties:
+        sslMode: TRUST
 
   jpa:
     hibernate:
