@@ -6,10 +6,8 @@ import com.academiq.academiq.domain.entity.Usuario;
 import com.academiq.academiq.domain.enums.*;
 import com.academiq.academiq.exception.RecursoNoEncontradoException;
 import com.academiq.academiq.exception.TransicionEstadoInvalidaException;
-import com.academiq.academiq.exception.UsuarioInactivoException;
 import com.academiq.academiq.repository.HistorialSolicitudRepository;
 import com.academiq.academiq.repository.SolicitudRepository;
-import com.academiq.academiq.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -25,10 +23,19 @@ import java.util.UUID;
 public class SolicitudService {
 
     private final SolicitudRepository solicitudRepository;
-    private final UsuarioRepository usuarioRepository;
     private final HistorialSolicitudRepository historialRepository;
     private final ReglaPrioridadService reglaPrioridadService;
+    private final UsuarioService usuarioService;
 
+    /**
+     * Registra una nueva solicitud en el sistema.
+     * 
+     * @param tipo El tipo de la solicitud (ej. HOMOLOGACION).
+     * @param descripcion Detalles provistos por el solicitante.
+     * @param canal El medio por el cual ingresó la solicitud.
+     * @param solicitanteId ID del usuario que requiere el servicio.
+     * @return La solicitud creada en estado REGISTRADA.
+     */
     // ── RF-01 Registrar ──────────────────────────────────────
     @Transactional
     public Solicitud registrar(TipoSolicitud tipo,
@@ -36,9 +43,7 @@ public class SolicitudService {
                                CanalOrigen canal,
                                UUID solicitanteId) {
 
-        Usuario solicitante = usuarioRepository.findById(solicitanteId)
-                .orElseThrow(() -> new RecursoNoEncontradoException(
-                        "Usuario no encontrado: " + solicitanteId));
+        Usuario solicitante = usuarioService.obtenerActivo(solicitanteId);
 
         Solicitud solicitud = Solicitud.builder()
                 .tipo(tipo)
@@ -55,6 +60,19 @@ public class SolicitudService {
         return solicitud;
     }
 
+    /**
+     * Clasifica una solicitud en estado REGISTRADA, aplicando reglas de prioridad
+     * y preparándola para su asignación.
+     * 
+     * @param solicitudId ID de la solicitud a clasificar.
+     * @param tipo Confirmamos/ajustamos el tipo de solicitud.
+     * @param impacto Nivel de impacto académico (ALTO, MEDIO, BAJO).
+     * @param fechaLimite Fecha de solución esperada.
+     * @param justificacion Explicación técnica de la prioridad.
+     * @param responsableId ID del funcionario que clasifica.
+     * @return La solicitud actualizada a estado CLASIFICADA.
+     * @throws TransicionEstadoInvalidaException si la solicitud no estaba en estado REGISTRADA.
+     */
     // ── RF-02, RF-03 Clasificar ───────────────────────────────
     @Transactional
     public Solicitud clasificar(UUID solicitudId,
@@ -72,6 +90,11 @@ public class SolicitudService {
                             "Estado actual: " + solicitud.getEstado());
         }
 
+        // Validación de regla de negocio: SLA máximo permitido institucional (ej. 30 días)
+        if (fechaLimite.isAfter(LocalDate.now().plusDays(30))) {
+            throw new IllegalArgumentException("La fecha límite no puede exceder el límite institucional de 30 días calendario.");
+        }
+
         Prioridad prioridad = reglaPrioridadService
                 .calcular(tipo, impacto, fechaLimite);
 
@@ -82,7 +105,7 @@ public class SolicitudService {
 
         solicitudRepository.save(solicitud);
 
-        Usuario responsable = obtenerUsuarioActivo(responsableId);
+        Usuario responsable = usuarioService.obtenerActivo(responsableId);
         registrarHistorial(solicitud, responsable, "CLASIFICADA",
                 "Prioridad calculada: " + prioridad + " | " + justificacion);
 
@@ -101,7 +124,7 @@ public class SolicitudService {
                             "Estado actual: " + solicitud.getEstado());
         }
 
-        Usuario responsable = obtenerUsuarioActivo(responsableId);
+        Usuario responsable = usuarioService.obtenerActivo(responsableId);
 
         solicitud.setResponsable(responsable);
         solicitud.setEstado(EstadoSolicitud.EN_ATENCION);
@@ -130,7 +153,7 @@ public class SolicitudService {
         solicitud.setEstado(EstadoSolicitud.ATENDIDA);
         solicitudRepository.save(solicitud);
 
-        Usuario usuario = solicitud.getResponsable();
+        Usuario usuario = usuarioService.obtenerActivo(usuarioId);
         registrarHistorial(solicitud, usuario, "ATENDIDA", observacion);
 
         return solicitud;
@@ -154,10 +177,23 @@ public class SolicitudService {
         solicitud.setObservacionCierre(observacionCierre);
         solicitudRepository.save(solicitud);
 
-        Usuario usuario = obtenerUsuarioActivo(usuarioId);
+        Usuario usuario = usuarioService.obtenerActivo(usuarioId);
         registrarHistorial(solicitud, usuario, "CERRADA", observacionCierre);
 
         return solicitud;
+    }
+
+    // ── Simulación de Prioridad ───────────────────────────────
+    public Prioridad simularPrioridad(TipoSolicitud tipo,
+                                      ImpactoAcademico impacto,
+                                      LocalDate fechaLimite) {
+        if (fechaLimite != null && fechaLimite.isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("La fecha límite no puede ser en el pasado.");
+        }
+        if (fechaLimite != null && fechaLimite.isAfter(LocalDate.now().plusDays(30))) {
+            throw new IllegalArgumentException("La fecha límite no puede exceder el límite institucional de 30 días calendario.");
+        }
+        return reglaPrioridadService.calcular(tipo, impacto, fechaLimite);
     }
 
     // ── RF-07 Consultar ───────────────────────────────────────
@@ -193,17 +229,6 @@ public class SolicitudService {
         return solicitudRepository.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "Solicitud no encontrada: " + id));
-    }
-
-    private Usuario obtenerUsuarioActivo(UUID id) {
-        Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException(
-                        "Usuario no encontrado: " + id));
-        if (!usuario.getActivo()) {
-            throw new UsuarioInactivoException(
-                    "El usuario " + usuario.getNombre() + " no está activo");
-        }
-        return usuario;
     }
 
     private void registrarHistorial(Solicitud solicitud,

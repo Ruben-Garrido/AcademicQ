@@ -1,13 +1,11 @@
 package com.academiq.academiq.service;
 
-import com.academiq.academiq.domain.entity.ReglaPrioridad;
 import com.academiq.academiq.domain.entity.Solicitud;
 import com.academiq.academiq.domain.entity.Usuario;
 import com.academiq.academiq.domain.enums.*;
 import com.academiq.academiq.exception.TransicionEstadoInvalidaException;
 import com.academiq.academiq.repository.HistorialSolicitudRepository;
 import com.academiq.academiq.repository.SolicitudRepository;
-import com.academiq.academiq.repository.UsuarioRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,7 +30,7 @@ class SolicitudServiceTest {
     private SolicitudRepository solicitudRepository;
 
     @Mock
-    private UsuarioRepository usuarioRepository;
+    private UsuarioService usuarioService;
 
     @Mock
     private ReglaPrioridadService reglaPrioridadService;
@@ -52,7 +50,7 @@ class SolicitudServiceTest {
         solicitante.setId(solicitanteId);
         solicitante.setRol(Rol.ESTUDIANTE);
 
-        when(usuarioRepository.findById(solicitanteId)).thenReturn(Optional.of(solicitante));
+        when(usuarioService.obtenerActivo(solicitanteId)).thenReturn(solicitante);
 
         Solicitud solicitudGuardada = new Solicitud();
         solicitudGuardada.setId(UUID.randomUUID());
@@ -117,7 +115,7 @@ class SolicitudServiceTest {
         responsable.setId(usuarioId);
         responsable.setActivo(true);
         responsable.setRol(Rol.RESPONSABLE);
-        when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(responsable));
+        when(usuarioService.obtenerActivo(usuarioId)).thenReturn(responsable);
 
         Solicitud solicitud = new Solicitud();
         solicitud.setId(solicitudId);
@@ -148,7 +146,7 @@ class SolicitudServiceTest {
         responsable.setId(responsableId);
         responsable.setActivo(true);
         responsable.setRol(Rol.RESPONSABLE);
-        when(usuarioRepository.findById(responsableId)).thenReturn(Optional.of(responsable));
+        when(usuarioService.obtenerActivo(responsableId)).thenReturn(responsable);
 
         Solicitud solicitud = new Solicitud();
         solicitud.setId(solicitudId);
@@ -181,6 +179,7 @@ class SolicitudServiceTest {
         solicitud.setResponsable(responsable);
 
         when(solicitudRepository.findById(solicitudId)).thenReturn(Optional.of(solicitud));
+        when(usuarioService.obtenerActivo(usuarioId)).thenReturn(responsable);
 
         Solicitud resultado = solicitudService.atender(solicitudId, "Atendido con exito", usuarioId);
 
@@ -196,7 +195,7 @@ class SolicitudServiceTest {
         Usuario responsable = new Usuario();
         responsable.setId(usuarioId);
         responsable.setActivo(true);
-        when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(responsable));
+        when(usuarioService.obtenerActivo(usuarioId)).thenReturn(responsable);
 
         Solicitud solicitud = new Solicitud();
         solicitud.setId(solicitudId);

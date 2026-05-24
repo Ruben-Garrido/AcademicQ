@@ -19,6 +19,7 @@ public class ClasificarRequest {
     private ImpactoAcademico impactoAcademico;
 
     @NotNull(message = "La fecha límite es obligatoria")
+    @jakarta.validation.constraints.FutureOrPresent(message = "La fecha límite no puede ser en el pasado")
     private LocalDate fechaLimite;
 
     @NotBlank(message = "La justificación es obligatoria")

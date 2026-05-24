@@ -26,6 +26,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import com.academiq.academiq.security.JwtService;
 
 @WebMvcTest(SolicitudController.class)
 @AutoConfigureMockMvc(addFilters = false) // Desactiva Spring Security para el test
@@ -38,7 +39,13 @@ class SolicitudControllerTest {
     private ObjectMapper objectMapper;
 
     @MockBean
+    private JwtService jwtService; // mockbean for missing context bean
+
+    @MockBean
     private SolicitudService solicitudService;
+    
+    @MockBean
+    private com.academiq.academiq.service.GeminiAiService geminiAiService;
 
     @MockBean
     private SolicitudMapper mapper;

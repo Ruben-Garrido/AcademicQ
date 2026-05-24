@@ -19,12 +19,16 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
 class UsuarioServiceTest {
 
     @Mock
     private UsuarioRepository usuarioRepository;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     @InjectMocks
     private UsuarioService usuarioService;
@@ -34,6 +38,7 @@ class UsuarioServiceTest {
     void test_crear_cuando_datosSonValidos_deberia_retornarUsuarioCreado() {
         // Arrange
         when(usuarioRepository.existsByEmail(anyString())).thenReturn(false);
+        when(passwordEncoder.encode(anyString())).thenReturn("hashedPass");
         Usuario usuarioMock = new Usuario();
         usuarioMock.setId(UUID.randomUUID());
         usuarioMock.setNombre("Test");

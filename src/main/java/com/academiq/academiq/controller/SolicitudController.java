@@ -3,6 +3,7 @@ package com.academiq.academiq.controller;
 import com.academiq.academiq.dto.request.*;
 import com.academiq.academiq.dto.response.*;
 import com.academiq.academiq.mapper.SolicitudMapper;
+import com.academiq.academiq.service.GeminiAiService;
 import com.academiq.academiq.service.SolicitudService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -11,8 +12,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import com.academiq.academiq.domain.enums.*;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -23,6 +26,7 @@ import java.util.UUID;
 public class SolicitudController {
 
     private final SolicitudService solicitudService;
+    private final GeminiAiService geminiAiService;
     private final SolicitudMapper mapper;
 
     // POST /solicitudes
@@ -53,6 +57,17 @@ public class SolicitudController {
                 solicitudService.listar(estado, tipo, prioridad,
                                 responsableId, pageable)
                         .map(mapper::toResponse));
+    }
+
+    // GET /solicitudes/simular-prioridad
+    @GetMapping("/simular-prioridad")
+    public ResponseEntity<PrioridadResponse> simularPrioridad(
+            @RequestParam TipoSolicitud tipo,
+            @RequestParam ImpactoAcademico impacto,
+            @RequestParam LocalDate fechaLimite) {
+        Prioridad prioridad = solicitudService.simularPrioridad(tipo, impacto, fechaLimite);
+        String mensaje = String.format("El sistema asignará prioridad %s automáticamente.", prioridad);
+        return ResponseEntity.ok(new PrioridadResponse(prioridad, mensaje));
     }
 
     // GET /solicitudes/{id}
@@ -124,5 +139,23 @@ public class SolicitudController {
                         .stream()
                         .map(mapper::toHistorialResponse)
                         .toList());
+    }
+
+    // GET /solicitudes/{id}/resumen-ai
+    @GetMapping("/{id}/resumen-ai")
+    @PreAuthorize("hasRole('COORDINADOR') or hasRole('FUNCIONARIO')")
+    public ResponseEntity<AiResumenResponse> resumirConAi(
+            @PathVariable UUID id) {
+        
+        var solicitud = solicitudService.obtenerPorId(id);
+        var historial = solicitudService.obtenerHistorial(id);
+        
+        String resumen = geminiAiService.generarResumen(solicitud, historial);
+        
+        return ResponseEntity.ok(AiResumenResponse.builder()
+                .resumen(resumen)
+                .modelo("gemini-1.5-flash")
+                .advertencia("Este resumen es generado por IA. Verifique siempre los documentos originales.")
+                .build());
     }
 }
