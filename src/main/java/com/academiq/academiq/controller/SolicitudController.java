@@ -143,7 +143,7 @@ public class SolicitudController {
 
     // GET /solicitudes/{id}/resumen-ai
     @GetMapping("/{id}/resumen-ai")
-    @PreAuthorize("hasRole('COORDINADOR') or hasRole('FUNCIONARIO')")
+    @PreAuthorize("hasRole('ADMINISTRADOR') or hasRole('RESPONSABLE')")
     public ResponseEntity<AiResumenResponse> resumirConAi(
             @PathVariable UUID id) {
         

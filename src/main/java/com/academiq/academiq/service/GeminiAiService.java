@@ -26,14 +26,13 @@ public class GeminiAiService {
     private final RestClient restClient = RestClient.create();
 
     public String generarResumen(Solicitud solicitud, List<HistorialSolicitud> historial) {
-        
-        // 1. Construir el prompt estructurado
-        String prompt = construirPrompt(solicitud, historial);
-
-        // 2. Construir el body del request según la documentación de Gemini
-        GeminiRequest requestBody = new GeminiRequest(prompt);
-
         try {
+            // 1. Construir el prompt estructurado
+            String prompt = construirPrompt(solicitud, historial);
+
+            // 2. Construir el body del request según la documentación de Gemini
+            GeminiRequest requestBody = new GeminiRequest(prompt);
+
             // 3. Hacer la llamada a la API
             GeminiResponse response = restClient.post()
                     .uri(apiUrl + "?key=" + apiKey)
