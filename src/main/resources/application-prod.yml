@@ -4,9 +4,9 @@ application:
 
 spring:
   datasource:
-    url: jdbc:mysql://${DB-HOST}:${DB-PORT}/${DB-NAME}?sslMode=REQUIRED&allowPublicKeyRetrieval=true
-    username: ${DB-USER}
-    password: ${DB-PASS}
+    url: ${DB-URL:jdbc:mysql://${DB-HOST}:${DB-PORT}/${DB-NAME}?sslMode=REQUIRED&allowPublicKeyRetrieval=true}
+    username: ${DB-USER:${DB-USERNAME:}}
+    password: ${DB-PASS:${DB-PASSWORD:}}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 5
