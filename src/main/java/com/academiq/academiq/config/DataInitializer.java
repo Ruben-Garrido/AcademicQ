@@ -19,13 +19,14 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        crearUsuarioSiNoExiste("Admin", "admin@uquindio.edu.co", "quindio123", Rol.ADMINISTRADOR);
-        crearUsuarioSiNoExiste("Responsable", "respo@uquindio.edu.co", "quindio123", Rol.RESPONSABLE);
-        crearUsuarioSiNoExiste("Estudiante", "ruben@uquindio.edu.co", "quindio123", Rol.ESTUDIANTE);
+        crearOActualizarUsuario("Juan Fernando", "admin@uquindio.edu.co", "quindio123", Rol.ADMINISTRADOR);
+        crearOActualizarUsuario("Laura Garcia", "respo@uquindio.edu.co", "quindio123", Rol.RESPONSABLE);
+        crearOActualizarUsuario("Ruben Garrido", "ruben@uquindio.edu.co", "quindio123", Rol.ESTUDIANTE);
     }
 
-    private void crearUsuarioSiNoExiste(String nombre, String email, String password, Rol rol) {
-        if (!usuarioRepository.existsByEmail(email)) {
+    private void crearOActualizarUsuario(String nombre, String email, String password, Rol rol) {
+        var optional = usuarioRepository.findByEmail(email);
+        if (optional.isEmpty()) {
             Usuario usuario = Usuario.builder()
                     .nombre(nombre)
                     .email(email)
@@ -34,7 +35,15 @@ public class DataInitializer implements CommandLineRunner {
                     .activo(true)
                     .build();
             usuarioRepository.save(usuario);
-            log.info("Usuario creado: {} / {} / {}", email, rol, password);
+            log.info("Usuario creado: {} / {} / {}", email, rol, nombre);
+        } else {
+            Usuario usuario = optional.get();
+            usuario.setNombre(nombre);
+            usuario.setPassword(passwordEncoder.encode(password));
+            usuario.setRol(rol);
+            usuario.setActivo(true);
+            usuarioRepository.save(usuario);
+            log.info("Usuario actualizado: {} / {} / {}", email, rol, nombre);
         }
     }
 }
