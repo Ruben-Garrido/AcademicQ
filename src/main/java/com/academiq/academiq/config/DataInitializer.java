@@ -19,16 +19,9 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        if (usuarioRepository.count() > 0) {
-            log.info("Ya existen usuarios en la BD, se omite la inicialización");
-            return;
-        }
-
         crearUsuarioSiNoExiste("Admin", "admin@uquindio.edu.co", "quindio123", Rol.ADMINISTRADOR);
         crearUsuarioSiNoExiste("Responsable", "respo@uquindio.edu.co", "quindio123", Rol.RESPONSABLE);
         crearUsuarioSiNoExiste("Estudiante", "ruben@uquindio.edu.co", "quindio123", Rol.ESTUDIANTE);
-
-        log.info("Usuarios iniciales creados correctamente");
     }
 
     private void crearUsuarioSiNoExiste(String nombre, String email, String password, Rol rol) {
